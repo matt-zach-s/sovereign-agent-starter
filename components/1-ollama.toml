@@ -1,0 +1,15 @@
+# helm
+name           = "ollama"
+type           = "helm_chart"
+chart_name     = "ollama"
+namespace      = "agent"
+storage_driver = "configmap"
+build_timeout  = "30m"
+
+[connected_repo]
+repo      = "matt-zach-s/byoc-agent-starter"
+directory = "src/charts/ollama"
+branch    = "main"
+
+[[values_file]]
+contents = "./values/ollama.yaml"

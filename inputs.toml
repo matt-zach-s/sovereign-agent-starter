@@ -1,0 +1,31 @@
+# inputs
+[[group]]
+name         = "dns"
+description  = "DNS configuration for the chatbot's public endpoint"
+display_name = "DNS"
+
+[[input]]
+name         = "domain"
+description  = "Root domain with a Route53 hosted zone, e.g. nuon.run"
+default      = "nuon.run"
+display_name = "Domain"
+group        = "dns"
+
+[[input]]
+name         = "sub_domain"
+description  = "Sub-domain for the chatbot endpoint"
+default      = "chat"
+display_name = "Sub Domain"
+group        = "dns"
+
+[[group]]
+name         = "model"
+description  = "Self-hosted open-weight LLM configuration"
+display_name = "Model"
+
+[[input]]
+name         = "model"
+description  = "Ollama model tag to self-host. Tiny CPU-friendly default. Step up (e.g. llama3.1:8b) on a larger instance type."
+default      = "llama3.2:3b"
+display_name = "Model"
+group        = "model"

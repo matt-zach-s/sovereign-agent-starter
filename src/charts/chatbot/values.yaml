@@ -1,0 +1,15 @@
+---
+namespace: "agent"
+
+image:
+  repository: "byoc-agent-starter-chatbot"
+  tag: "latest"
+
+openaiBaseUrl: "http://ollama.agent.svc.cluster.local:11434/v1"
+model: "llama3.2:3b"
+
+service:
+  port: 80
+
+deployment:
+  containerPort: 8080

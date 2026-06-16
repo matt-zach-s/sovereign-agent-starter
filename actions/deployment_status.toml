@@ -1,0 +1,16 @@
+# action
+name    = "deployment_status"
+timeout = "45s"
+
+[[triggers]]
+type = "manual"
+
+[[steps]]
+name    = "status"
+inline_contents = """
+#!/usr/bin/env sh
+set -e
+kubectl get -n agent deployments
+response=`kubectl get -n agent deployments -o json | jq -c`
+echo $response >> $NUON_ACTIONS_OUTPUT_FILEPATH
+"""

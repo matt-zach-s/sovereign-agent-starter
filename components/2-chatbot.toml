@@ -1,0 +1,15 @@
+# helm
+name           = "chatbot"
+type           = "helm_chart"
+chart_name     = "chatbot"
+namespace      = "agent"
+storage_driver = "configmap"
+dependencies   = ["ollama", "chatbot_image"]
+
+[connected_repo]
+repo      = "matt-zach-s/byoc-agent-starter"
+directory = "src/charts/chatbot"
+branch    = "main"
+
+[[values_file]]
+contents = "./values/chatbot.yaml"

@@ -1,0 +1,9 @@
+---
+apiVersion: v2
+name: ollama
+description: Self-hosted Ollama model server exposing an OpenAI-compatible API.
+type: application
+version: v0.0.1
+appVersion: "0.0.1"
+
+dependencies: []

@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  namespace: {{ .Values.namespace | default .Release.Namespace | quote }}
+  labels:
+    app: ollama
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      containers:
+      - name: ollama
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        env:
+        - name: OLLAMA_HOST
+          value: "0.0.0.0:11434"
+        - name: MODEL
+          value: "{{ .Values.model }}"
+        # Start the server, wait for it, then pull the configured tiny model.
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          /bin/ollama serve &
+          pid=$!
+          echo "waiting for ollama to accept connections..."
+          until /bin/ollama list >/dev/null 2>&1; do sleep 2; done
+          echo "pulling model: $MODEL"
+          /bin/ollama pull "$MODEL"
+          wait $pid
+        ports:
+        - containerPort: 11434
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+        # Gate readiness until the model has finished pulling (CPU pulls take ~1-3 min).
+        startupProbe:
+          exec:
+            command: ["/bin/sh", "-c", "ollama list | grep -q \"$MODEL\""]
+          periodSeconds: 10
+          failureThreshold: 60
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 11434
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 11434
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        volumeMounts:
+        - name: ollama-data
+          mountPath: /root/.ollama
+      volumes:
+      # Tier 0: ephemeral model cache. For faster restarts, swap this for a PVC.
+      - name: ollama-data
+        emptyDir: {}

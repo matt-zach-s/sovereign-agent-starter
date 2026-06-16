@@ -1,0 +1,17 @@
+---
+namespace: "agent"
+
+image:
+  repository: "{{ .nuon.components.chatbot_image.outputs.image.repository }}"
+  tag: "{{ .nuon.components.chatbot_image.outputs.image.tag }}"
+
+# The swap layer: the chatbot talks to the self-hosted Ollama service over its
+# OpenAI-compatible API. No frontier API calls leave the cluster.
+openaiBaseUrl: "http://ollama.agent.svc.cluster.local:11434/v1"
+model: "{{ .nuon.inputs.inputs.model }}"
+
+service:
+  port: 80
+
+deployment:
+  containerPort: 8080

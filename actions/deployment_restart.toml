@@ -1,0 +1,21 @@
+# action
+name    = "deployment_restart"
+timeout = "60s"
+
+[[triggers]]
+type = "manual"
+
+[[steps]]
+name    = "restart"
+inline_contents = """
+#!/usr/bin/env bash
+set -e
+set -o pipefail
+set -u
+
+echo >&2 "restarting chatbot and ollama deployments..."
+kubectl --namespace agent rollout restart deployment chatbot ollama
+sleep 5
+
+echo '{"restarted": ["chatbot", "ollama"]}' >> $NUON_ACTIONS_OUTPUT_FILEPATH
+"""

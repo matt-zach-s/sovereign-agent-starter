@@ -1,0 +1,19 @@
+---
+namespace: "agent"
+
+image:
+  repository: "ollama/ollama"
+  tag: "latest"
+
+model: "{{ .nuon.inputs.inputs.model }}"
+
+service:
+  port: 11434
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "3Gi"
+  limits:
+    cpu: "2"
+    memory: "5Gi"

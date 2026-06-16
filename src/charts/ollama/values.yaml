@@ -1,0 +1,19 @@
+---
+namespace: "agent"
+
+image:
+  repository: "ollama/ollama"
+  tag: "latest"
+
+model: "llama3.2:3b"
+
+service:
+  port: 11434
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "3Gi"
+  limits:
+    cpu: "2"
+    memory: "5Gi"

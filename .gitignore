@@ -1,0 +1,11 @@
+# Keep the internal product spec local-only — it is not part of the shipped example app.
+SPEC.md
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS / editor
+.DS_Store

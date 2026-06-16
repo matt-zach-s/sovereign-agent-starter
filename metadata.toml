@@ -1,0 +1,5 @@
+version = "v2"
+
+display_name = "BYOC Agent Starter"
+description  = "A self-hosted chatbot + tiny open-weight LLM, deployable into a customer's own cloud. A starting line for building sovereign agentic tools."
+readme       = "./README.md"
