@@ -94,8 +94,10 @@ Empty in Tier 0 by design. See `src/app/integrations/README.md`.
 
 ## Cost & sovereignty notes
 
-- Tier 0 is CPU-only; the cost floor is the EKS cluster + one small node, not a GPU
-  fleet. Reaching "hello world" never requires a GPU quota request.
+- Tier 0 is CPU-only; the cost floor is the EKS cluster + a small 2-node group, not
+  a GPU fleet. Reaching "hello world" never requires a GPU quota request. (Two nodes
+  is the floor because the Nuon sandbox runs Kyverno in HA — that's the platform
+  baseline, not the app; a single node can't schedule it alongside the model server.)
 - No frontier API keys are stored (`secrets.toml` is empty) because the model is
   self-hosted. Prompts, data, and (once you add them) integration credentials stay
   inside the customer's account.

@@ -21,6 +21,6 @@ maintenance_cluster_role_rules_override = [{
   "verbs"     = ["*"]
 }]
 
-min_size     = 1
-max_size     = 2
-desired_size = 1
+min_size     = 2
+max_size     = 4
+desired_size = 2
