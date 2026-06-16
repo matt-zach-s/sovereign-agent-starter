@@ -1,0 +1,45 @@
+name        = "reconcile-drift"
+description = "Reconcile configuration drift by re-applying desired state — infrastructure first, then the app components."
+readme      = "./runbooks/reconcile-drift.md"
+
+[labels]
+team = "platform"
+kind = "drift"
+
+[[steps]]
+name    = "detect-drift"
+type    = "action"
+timeout = "3m"
+inline_contents = """
+#!/usr/bin/env bash
+set -uo pipefail
+
+echo "current live state for install {{ .nuon.install.id }} (compare against desired):"
+kubectl -n agent get deploy,svc,ingress -o wide
+kubectl get nodes -o wide
+"""
+
+[[steps]]
+name                   = "reconcile-infra"
+type                   = "sandbox_reprovision"
+skip_component_deploys = true
+
+[[steps]]
+name           = "reconcile-model"
+type           = "component_deploy"
+component_name = "ollama"
+
+[[steps]]
+name              = "reconcile-app"
+type              = "component_deploy"
+component_name    = "chatbot"
+deploy_dependents = true
+
+[[steps]]
+name    = "verify"
+type    = "action"
+timeout = "5m"
+command = 'curl --fail --show-error --silent --retry $MAX_RETRIES --retry-delay 15 https://{{ .nuon.inputs.inputs.sub_domain }}.{{ .nuon.install.sandbox.outputs.nuon_dns.public_domain.name }}/health'
+
+[steps.env_vars]
+MAX_RETRIES = "20"

@@ -1,0 +1,35 @@
+name        = "onboard-install"
+description = "Onboard a new customer install: warm the model, deploy the app, and confirm it's live."
+readme      = "./runbooks/onboard-install.md"
+
+[labels]
+team = "platform"
+kind = "setup"
+
+[[steps]]
+name    = "warm-model"
+type    = "action"
+timeout = "15m"
+inline_contents = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "warming model {{ .nuon.inputs.inputs.model }} for install {{ .nuon.install.id }}"
+kubectl -n agent rollout status deploy/ollama --timeout=10m
+kubectl -n agent exec deploy/ollama -- ollama pull "{{ .nuon.inputs.inputs.model }}"
+"""
+
+[[steps]]
+name              = "deploy-app"
+type              = "component_deploy"
+component_name    = "chatbot"
+deploy_dependents = true
+
+[[steps]]
+name    = "smoke-test"
+type    = "action"
+timeout = "5m"
+command = 'curl --fail --show-error --silent --retry $MAX_RETRIES --retry-delay 15 https://{{ .nuon.inputs.inputs.sub_domain }}.{{ .nuon.install.sandbox.outputs.nuon_dns.public_domain.name }}/health'
+
+[steps.env_vars]
+MAX_RETRIES = "20"

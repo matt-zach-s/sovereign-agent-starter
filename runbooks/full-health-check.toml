@@ -1,0 +1,52 @@
+name        = "full-health-check"
+description = "Check the health of an install across nodes, the model server, the chatbot, ingress, and the public endpoint."
+readme      = "./runbooks/full-health-check.md"
+
+[labels]
+team = "platform"
+kind = "health-check"
+
+[[steps]]
+name    = "node-health"
+type    = "action"
+timeout = "2m"
+inline_contents = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "== nodes =="
+kubectl get nodes -o wide
+kubectl top nodes || true
+"""
+
+[[steps]]
+name        = "workload-health"
+type        = "action"
+action_name = "deployment_status"
+
+[[steps]]
+name    = "model-server-health"
+type    = "action"
+timeout = "3m"
+inline_contents = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "== ollama model server =="
+kubectl -n agent rollout status deploy/ollama --timeout=2m
+kubectl -n agent exec deploy/ollama -- ollama list
+"""
+
+[[steps]]
+name        = "ingress-health"
+type        = "action"
+action_name = "alb_healthcheck"
+
+[[steps]]
+name    = "endpoint-health"
+type    = "action"
+timeout = "5m"
+command = 'curl --fail --show-error --silent --retry $MAX_RETRIES --retry-delay 15 https://{{ .nuon.inputs.inputs.sub_domain }}.{{ .nuon.install.sandbox.outputs.nuon_dns.public_domain.name }}/health'
+
+[steps.env_vars]
+MAX_RETRIES = "10"

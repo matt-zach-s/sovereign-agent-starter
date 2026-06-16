@@ -1,0 +1,37 @@
+name        = "migrate-and-roll-out"
+description = "Apply a migration, roll out the new version, then health-check it — the safe way to ship a breaking change."
+readme      = "./runbooks/migrate-and-roll-out.md"
+
+[labels]
+team = "platform"
+kind = "migration"
+
+[[steps]]
+name    = "apply-migration"
+type    = "action"
+timeout = "10m"
+inline_contents = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "applying migration for install {{ .nuon.install.id }}"
+kubectl -n agent delete job schema-migrate --ignore-not-found
+kubectl -n agent create job schema-migrate --image=busybox:1.36 -- \
+  /bin/sh -c 'echo "migrating schema..."; sleep 5; echo "migration complete"'
+kubectl -n agent wait --for=condition=complete --timeout=8m job/schema-migrate
+"""
+
+[[steps]]
+name              = "roll-out"
+type              = "component_deploy"
+component_name    = "chatbot"
+deploy_dependents = true
+
+[[steps]]
+name    = "health-check"
+type    = "action"
+timeout = "5m"
+command = 'curl --fail --show-error --silent --retry $MAX_RETRIES --retry-delay 15 https://{{ .nuon.inputs.inputs.sub_domain }}.{{ .nuon.install.sandbox.outputs.nuon_dns.public_domain.name }}/health'
+
+[steps.env_vars]
+MAX_RETRIES = "20"

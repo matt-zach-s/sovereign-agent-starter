@@ -1,0 +1,19 @@
+# action
+name               = "break_glass_remediation"
+timeout            = "5m"
+enable_kube_config = true
+break_glass_role   = "{{.nuon.install.id}}-byoc-agent-starter-sandbox-break-glass"
+
+[[triggers]]
+type = "manual"
+
+[[steps]]
+name = "emergency-remediation"
+inline_contents = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "BREAK GLASS: elevated remediation for install {{ .nuon.install.id }}"
+kubectl -n agent rollout restart deploy/chatbot deploy/ollama
+kubectl -n agent rollout status deploy/chatbot --timeout=3m
+"""

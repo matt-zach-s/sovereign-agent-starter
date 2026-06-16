@@ -1,0 +1,43 @@
+name        = "debug-bundle"
+description = "Something's gone wrong — collect a diagnostic bundle: pod state, events, recent logs, and a verbose endpoint probe."
+readme      = "./runbooks/debug-bundle.md"
+
+[labels]
+team = "platform"
+kind = "debug"
+
+[[steps]]
+name    = "describe-and-events"
+type    = "action"
+timeout = "3m"
+inline_contents = """
+#!/usr/bin/env bash
+set -uo pipefail
+
+echo "== pods =="
+kubectl -n agent get pods -o wide
+echo "== describe =="
+kubectl -n agent describe pods
+echo "== recent events =="
+kubectl -n agent get events --sort-by=.lastTimestamp | tail -50
+"""
+
+[[steps]]
+name    = "recent-logs"
+type    = "action"
+timeout = "3m"
+inline_contents = """
+#!/usr/bin/env bash
+set -uo pipefail
+
+echo "== chatbot logs =="
+kubectl -n agent logs deploy/chatbot --tail=200 --all-containers=true || true
+echo "== ollama logs =="
+kubectl -n agent logs deploy/ollama --tail=200 --all-containers=true || true
+"""
+
+[[steps]]
+name    = "endpoint-probe"
+type    = "action"
+timeout = "2m"
+command = 'curl -sS -o /dev/null -w "HTTP %{http_code} in %{time_total}s\n" https://{{ .nuon.inputs.inputs.sub_domain }}.{{ .nuon.install.sandbox.outputs.nuon_dns.public_domain.name }}/health || true'
