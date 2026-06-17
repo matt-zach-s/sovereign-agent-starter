@@ -18,6 +18,7 @@ spec:
       containers:
       - name: chatbot
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: Always
         env:
         - name: OPENAI_BASE_URL
           value: "{{ .Values.openaiBaseUrl }}"
@@ -31,20 +32,27 @@ spec:
         - containerPort: {{ .Values.deployment.containerPort }}
         resources:
           requests:
-            cpu: "50m"
-            memory: "128Mi"
+            cpu: "100m"
+            memory: "256Mi"
           limits:
             cpu: "500m"
-            memory: "256Mi"
+            memory: "512Mi"
+        # Gate readiness/liveness until the Python app has finished importing and
+        # is serving /health — covers image pull + a slow cold start (~up to 150s)
+        # without the liveness probe restarting a still-booting container.
+        startupProbe:
+          httpGet:
+            path: /health
+            port: {{ .Values.deployment.containerPort }}
+          periodSeconds: 5
+          failureThreshold: 30
         readinessProbe:
           httpGet:
             path: /health
             port: {{ .Values.deployment.containerPort }}
-          initialDelaySeconds: 5
           periodSeconds: 10
         livenessProbe:
           httpGet:
             path: /health
             port: {{ .Values.deployment.containerPort }}
-          initialDelaySeconds: 5
           periodSeconds: 15
