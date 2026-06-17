@@ -6,7 +6,7 @@ namespace      = "agent"
 storage_driver = "configmap"
 dependencies   = ["ollama", "chatbot_image"]
 
-[connected_repo]
+[public_repo]
 repo      = "matt-zach-s/byoc-agent-starter"
 directory = "src/charts/chatbot"
 branch    = "main"

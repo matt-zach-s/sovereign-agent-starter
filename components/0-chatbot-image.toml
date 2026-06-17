@@ -4,7 +4,7 @@ type = "docker_build"
 
 dockerfile = "Dockerfile"
 
-[connected_repo]
+[public_repo]
 repo      = "matt-zach-s/byoc-agent-starter"
 directory = "src/app"
 branch    = "main"

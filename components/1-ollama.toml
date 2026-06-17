@@ -6,7 +6,7 @@ namespace      = "agent"
 storage_driver = "configmap"
 build_timeout  = "30m"
 
-[connected_repo]
+[public_repo]
 repo      = "matt-zach-s/byoc-agent-starter"
 directory = "src/charts/ollama"
 branch    = "main"
