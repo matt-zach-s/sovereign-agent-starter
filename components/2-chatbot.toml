@@ -4,6 +4,7 @@ type           = "helm_chart"
 chart_name     = "chatbot"
 namespace      = "agent"
 storage_driver = "configmap"
+deploy_timeout = "20m"
 dependencies   = ["ollama", "chatbot_image"]
 
 [public_repo]
