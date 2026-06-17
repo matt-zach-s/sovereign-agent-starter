@@ -101,3 +101,19 @@ Empty in Tier 0 by design. See `src/app/integrations/README.md`.
 - No frontier API keys are stored (`secrets.toml` is empty) because the model is
   self-hosted. Prompts, data, and (once you add them) integration credentials stay
   inside the customer's account.
+
+## Provisioning notes (sandbox sizing gotchas)
+
+Learned the hard way — get node sizing right **before the first provision**:
+
+- **≥2 nodes is the floor.** The sandbox installs Kyverno in HA (9 pods); a single
+  node can't fit that + the model server, so `desired_size=1` makes the Kyverno
+  Helm release fail during sandbox provisioning. `sandbox.tfvars` ships `min=2 /
+  desired=2 / max=4`.
+- **You can't grow an existing EKS managed node group's `desired_size` via a
+  re-sync/reprovision.** The upstream module sets `ignore_changes=[desired_size]`,
+  and AWS also rejects raising `min` above the current `desired`
+  (`Minimum capacity 2 can't be greater than desired size 1`). A reprovision reuses
+  the *same* node group, so sizing changes don't take. To change node count: either
+  **tear down and create a fresh install** (new node group, born at the new size),
+  or scale the node group directly in AWS (`aws eks update-nodegroup-config`).
