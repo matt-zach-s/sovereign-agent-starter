@@ -9,3 +9,6 @@ venv/
 
 # OS / editor
 .DS_Store
+
+# Brainstorming visual companion (local mockups)
+.superpowers/
