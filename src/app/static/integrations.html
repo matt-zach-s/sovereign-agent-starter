@@ -103,6 +103,7 @@
 
 <script>
 const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let parsedOps = [];
 
 async function load() {
@@ -116,13 +117,13 @@ async function load() {
     const el = document.createElement('div');
     el.className = 'row';
     el.innerHTML = `<span class="dot ${i.enabled ? '' : 'off'}"></span>
-      <div><div class="nm">${i.name}<span class="badge">${i.type}</span></div>
-      <div class="sub">${i.base_url} · ${i.tool_count} tools · ${i.auth_type}</div></div>
+      <div><div class="nm">${esc(i.name)}<span class="badge">${esc(i.type)}</span></div>
+      <div class="sub">${esc(i.base_url)} · ${i.tool_count} tools · ${esc(i.auth_type)}</div></div>
       <span class="grow"></span>
       ${i.source === 'session' ? '<span class="pill">not persisted</span>' : ''}
       <div class="row-actions">
-        <span class="toggle" data-id="${i.id}" data-enabled="${i.enabled}">${i.enabled ? 'Disable' : 'Enable'}</span>
-        ${i.source === 'session' ? `<span class="toggle" data-del="${i.id}">Remove</span>` : ''}
+        <span class="toggle" data-id="${esc(i.id)}" data-enabled="${i.enabled}">${i.enabled ? 'Disable' : 'Enable'}</span>
+        ${i.source === 'session' ? `<span class="toggle" data-del="${esc(i.id)}">Remove</span>` : ''}
       </div>`;
     list.appendChild(el);
   }
@@ -168,7 +169,7 @@ $('f-parse').onclick = async () => {
   const ops = $('ops'); ops.innerHTML='';
   parsedOps.forEach((o,n) => {
     ops.innerHTML += `<label class="op"><input type="checkbox" data-op="${n}" style="width:auto;"/>
-      <b>${o.method.toUpperCase()}</b> ${o.path} <span class="sub">${o.summary||''}</span></label>`;
+      <b>${esc(o.method).toUpperCase()}</b> ${esc(o.path)} <span class="sub">${esc(o.summary)}</span></label>`;
   });
   ops.onchange = () => { const c = ops.querySelectorAll(':checked').length;
     $('ops-count').textContent = c + ' selected'; };

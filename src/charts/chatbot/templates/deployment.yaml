@@ -72,6 +72,8 @@ spec:
       - name: integrations-config
         configMap:
           name: chatbot-integrations
+          optional: true
       - name: integration-secrets
         secret:
           secretName: chatbot-integration-secrets
+          optional: true

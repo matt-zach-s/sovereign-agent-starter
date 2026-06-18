@@ -4,8 +4,6 @@ Pure parsing — no network here (callers fetch spec text and pass it in), so th
 is trivially testable. The selected operations are persisted in full (method,
 path, params) so the running app never needs the spec endpoint at boot.
 """
-import json
-
 import yaml
 
 from .models import Operation, ParsedSpec, sanitize_tool_name
