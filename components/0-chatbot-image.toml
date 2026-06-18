@@ -3,7 +3,7 @@ name = "chatbot_image"
 type = "docker_build"
 
 dockerfile    = "Dockerfile"
-build_timeout = "25m"
+build_timeout = "20m"
 
 [public_repo]
 repo      = "matt-zach-s/byoc-agent-starter"
