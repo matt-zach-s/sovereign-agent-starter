@@ -15,3 +15,14 @@ service:
 
 deployment:
   containerPort: 8080
+
+enableIntegrationsAdmin: true
+
+# Integration defs rendered into the chatbot-integrations ConfigMap.
+# Empty in Tier 0. The /integrations UI generates this block for you.
+integrations:
+  yaml: |
+    integrations: []
+
+# Auth secret values, by secret_ref key. Empty in Tier 0.
+integrationSecrets: {}
