@@ -32,15 +32,6 @@ alb           (helm)          ──► public HTTPS endpoint (reused)
 The model is a customer input (`model`, default `qwen2.5:1.5b`). First request pulls
 the model (~1–3 min on CPU), then it's resident.
 
-## Complexity tiers
-
-| Tier | Adds | Compute |
-|------|------|---------|
-| **0 — Hello world** (this kit) | chat UI + self-hosted tiny model | small CPU node, no GPU |
-| **1 — Wire your systems** | add integrations via the `/integrations` UI (OpenAPI + MCP working) | still CPU |
-| **2 — Production model** | swap Ollama for vLLM + a larger open model | GPU node group |
-| **3 — Sovereign** | air-gap, RAG over your corpus, full audit | GPU + in-boundary stores |
-
 ## Try it locally first
 
 ```bash
