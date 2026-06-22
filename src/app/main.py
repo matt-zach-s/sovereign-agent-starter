@@ -28,7 +28,7 @@ def build_registry() -> Registry:
 
 registry = build_registry()
 
-app = FastAPI(title="BYOC Agent Starter — chatbot")
+app = FastAPI(title="Sovereign Agent Starter — chatbot")
 if ENABLE_ADMIN:
     app.include_router(build_router(registry))
 

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>BYOC Agent Starter</title>
+  <title>Sovereign Agent Starter</title>
   <style>
     :root { --bg:#0d1117; --panel:#161b22; --line:#30363d; --text:#e6edf3; --muted:#8b949e; --accent:#2f81f7; }
     * { box-sizing: border-box; }
@@ -28,7 +28,7 @@
 </head>
 <body>
   <header>
-    <h1>BYOC Agent Starter</h1>
+    <h1>Sovereign Agent Starter</h1>
     <span id="meta">self-hosted &middot; no frontier API calls</span>
     <span style="flex:1"></span>
     <a href="/integrations" style="font-size:13px;color:#8b949e;text-decoration:none;">Integrations →</a>
@@ -46,7 +46,7 @@
     const form = document.getElementById('form');
     const input = document.getElementById('input');
     const send = document.getElementById('send');
-    const KEY = 'byoc-chat-history';
+    const KEY = 'sovereign-chat-history';
     let history = JSON.parse(localStorage.getItem(KEY) || '[]');  // [{role,content}]
 
     fetch('/health').then(r => r.json()).then(d => {

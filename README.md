@@ -1,4 +1,4 @@
-# BYOC Agent Starter
+# Sovereign Agent Starter
 
 A **self-hosted chatbot + a tiny open-weight LLM**, deployable into a customer's own
 cloud account with [Nuon](https://nuon.co). It's a **starting line** for building
@@ -46,11 +46,11 @@ MODEL=qwen2.5:1.5b docker compose up --build   # smaller/faster
 
 Prerequisites: a Nuon account, the `nuon` CLI, and this repo **connected to Nuon**
 (the `ollama`, `chatbot`, and `chatbot_image` components build from
-`matt-zach-s/byoc-agent-starter` via a connected repo).
+`matt-zach-s/sovereign-agent-starter` via a connected repo).
 
 ```bash
 # app name MUST match the directory name
-nuon apps create --name=byoc-agent-starter
+nuon apps create --name=sovereign-agent-starter
 nuon sync                       # syncs this app config
 # then create an install against a customer AWS account from the dashboard/CLI
 ```

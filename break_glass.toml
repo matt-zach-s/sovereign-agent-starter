@@ -1,5 +1,5 @@
 [[role]]
-name                 = "{{.nuon.install.id}}-byoc-agent-starter-sandbox-break-glass"
+name                 = "{{.nuon.install.id}}-sovereign-agent-starter-sandbox-break-glass"
 description          = "grants access to the sandbox for install {{.nuon.install.id}}."
 display_name         = "break glass role"
 permissions_boundary = ""

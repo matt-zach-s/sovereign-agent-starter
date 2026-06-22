@@ -7,7 +7,7 @@ storage_driver = "configmap"
 build_timeout  = "30m"
 
 [public_repo]
-repo      = "matt-zach-s/byoc-agent-starter"
+repo      = "matt-zach-s/sovereign-agent-starter"
 directory = "src/charts/ollama"
 branch    = "main"
 

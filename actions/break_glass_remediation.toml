@@ -2,7 +2,7 @@
 name               = "break_glass_remediation"
 timeout            = "5m"
 enable_kube_config = true
-break_glass_role   = "{{.nuon.install.id}}-byoc-agent-starter-sandbox-break-glass"
+break_glass_role   = "{{.nuon.install.id}}-sovereign-agent-starter-sandbox-break-glass"
 
 [[triggers]]
 type = "manual"

@@ -9,7 +9,7 @@
 
 1. **emergency-remediation** — runs the **break_glass_remediation** action, which
    assumes the install's break-glass IAM role
-   (`{{ .nuon.install.id }}-byoc-agent-starter-sandbox-break-glass`) and force-rolls
+   (`{{ .nuon.install.id }}-sovereign-agent-starter-sandbox-break-glass`) and force-rolls
    the `chatbot` and `ollama` deployments.
 2. **verify** — curls the public endpoint until it returns healthy, confirming the
    emergency action restored service.

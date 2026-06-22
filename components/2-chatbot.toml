@@ -8,7 +8,7 @@ deploy_timeout = "20m"
 dependencies   = ["ollama", "chatbot_image"]
 
 [public_repo]
-repo      = "matt-zach-s/byoc-agent-starter"
+repo      = "matt-zach-s/sovereign-agent-starter"
 directory = "src/charts/chatbot"
 branch    = "main"
 
