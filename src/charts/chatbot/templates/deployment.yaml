@@ -28,6 +28,12 @@ spec:
           value: "{{ .Values.model }}"
         - name: PORT
           value: "{{ .Values.deployment.containerPort }}"
+        - name: INTEGRATIONS_CONFIG
+          value: "/etc/chatbot/config/integrations.yaml"
+        - name: INTEGRATIONS_SECRETS_DIR
+          value: "/etc/chatbot/secrets"
+        - name: ENABLE_INTEGRATIONS_ADMIN
+          value: "{{ .Values.enableIntegrationsAdmin | default true }}"
         ports:
         - containerPort: {{ .Values.deployment.containerPort }}
         resources:
@@ -56,3 +62,18 @@ spec:
             path: /health
             port: {{ .Values.deployment.containerPort }}
           periodSeconds: 15
+        volumeMounts:
+        - name: integrations-config
+          mountPath: /etc/chatbot/config
+        - name: integration-secrets
+          mountPath: /etc/chatbot/secrets
+          readOnly: true
+      volumes:
+      - name: integrations-config
+        configMap:
+          name: chatbot-integrations
+          optional: true
+      - name: integration-secrets
+        secret:
+          secretName: chatbot-integration-secrets
+          optional: true

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Integrations · BYOC Agent Starter</title>
+  <style>
+    :root { --bg:#0d1117; --panel:#161b22; --line:#30363d; --text:#e6edf3; --muted:#8b949e; --accent:#2f81f7; --ok:#3fb950; --warn:#d29922; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--text); }
+    header { padding:14px 20px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:16px; }
+    header h1 { font-size:15px; margin:0; font-weight:600; }
+    nav a { font-size:13px; color:var(--muted); text-decoration:none; margin-right:12px; }
+    nav a.on { color:var(--text); border-bottom:2px solid var(--accent); padding-bottom:11px; }
+    main { max-width:760px; margin:0 auto; padding:24px 20px; }
+    .toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .meta { color:var(--muted); font-size:13px; }
+    button { background:var(--accent); color:#fff; border:0; border-radius:7px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer; }
+    button.ghost { background:var(--panel); border:1px solid var(--line); color:var(--text); }
+    .row { display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--line); border-radius:9px; background:var(--panel); margin-bottom:10px; }
+    .dot { width:9px; height:9px; border-radius:50%; background:var(--ok); flex:none; }
+    .dot.off { background:var(--muted); }
+    .nm { font-weight:600; } .badge { font-size:11px; color:var(--muted); border:1px solid var(--line); border-radius:10px; padding:1px 8px; margin-left:6px; }
+    .sub { color:var(--muted); font-size:12px; }
+    .grow { flex:1; }
+    .pill { font-size:11px; color:var(--warn); border:1px solid #d2992244; border-radius:10px; padding:1px 8px; }
+    .empty { color:var(--muted); text-align:center; padding:40px 0; }
+    .overlay { position:fixed; inset:0; background:#010409cc; display:none; align-items:flex-start; justify-content:center; overflow:auto; padding:40px 16px; }
+    .overlay.show { display:flex; }
+    .modal { width:520px; max-width:100%; background:var(--panel); border:1px solid var(--line); border-radius:11px; }
+    .m-h { display:flex; justify-content:space-between; align-items:center; padding:14px 16px; border-bottom:1px solid var(--line); }
+    .m-b { padding:16px; } .sec { margin-bottom:18px; }
+    .sec-t { font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); border-bottom:1px solid #21262d; padding-bottom:6px; margin-bottom:10px; }
+    label { display:block; font-size:12px; color:var(--muted); margin:8px 0 4px; }
+    input, select, textarea { width:100%; background:var(--bg); border:1px solid var(--line); color:var(--text); border-radius:6px; padding:7px 9px; font-size:13px; font-family:inherit; }
+    textarea { min-height:80px; }
+    .ok { color:var(--ok); font-size:12px; } .err { color:#ffb4b4; font-size:12px; }
+    .ops { max-height:200px; overflow:auto; border:1px solid var(--line); border-radius:6px; padding:8px; }
+    .op { display:flex; gap:8px; align-items:center; font-size:12px; padding:3px 0; }
+    .m-f { border-top:1px solid var(--line); padding:12px 16px; display:flex; justify-content:flex-end; gap:8px; }
+    pre { background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:10px; font-size:11px; overflow:auto; white-space:pre; }
+    .row-actions { display:flex; gap:8px; align-items:center; }
+    .toggle { cursor:pointer; font-size:12px; color:var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>BYOC Agent Starter</h1>
+    <nav><a href="/">Chat</a><a href="/integrations" class="on">Integrations</a></nav>
+  </header>
+  <main>
+    <div class="toolbar">
+      <span class="meta" id="meta">Loading…</span>
+      <button id="add">+ Add integration</button>
+    </div>
+    <div id="list"></div>
+  </main>
+
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <div class="m-h"><b id="m-title">Add integration</b><span class="toggle" id="m-close">✕</span></div>
+      <div class="m-b">
+        <div class="sec">
+          <div class="sec-t">1 · Source</div>
+          <label>Name</label><input id="f-name" placeholder="Inventory API" />
+          <label>OpenAPI spec URL (in-VPC)</label>
+          <input id="f-spec-url" placeholder="http://inventory.svc.internal/v1/openapi.json" />
+          <label>…or paste spec (JSON/YAML)</label><textarea id="f-spec-text"></textarea>
+          <div style="margin-top:8px;"><button class="ghost" id="f-parse">Fetch &amp; parse</button>
+            <span id="parse-status"></span></div>
+        </div>
+        <div class="sec" id="sec-conn" style="display:none;">
+          <div class="sec-t">2 · Connection &amp; auth</div>
+          <label>Base URL</label><input id="f-base" />
+          <label>Auth type</label>
+          <select id="f-auth"><option value="none">None</option>
+            <option value="bearer">Bearer token</option>
+            <option value="api_key_header">API key header</option></select>
+          <div id="auth-header-wrap" style="display:none;"><label>Header name</label>
+            <input id="f-header" placeholder="X-API-Key" /></div>
+          <div id="auth-secret-wrap" style="display:none;"><label>Secret value 🔒 (stored in K8s Secret, never returned)</label>
+            <input id="f-secret" type="password" /></div>
+          <div style="margin-top:8px;"><button class="ghost" id="f-test">Test connection</button>
+            <span id="test-status"></span></div>
+        </div>
+        <div class="sec" id="sec-ops" style="display:none;">
+          <div class="sec-t">3 · Operations → tools <span id="ops-count" style="float:right;text-transform:none;"></span></div>
+          <div class="sub" style="margin-bottom:6px;">Pick which operations the agent may call. Small models do best with ≤ ~8.</div>
+          <div class="ops" id="ops"></div>
+        </div>
+        <div id="persist" style="display:none;">
+          <div class="sec-t">Persist this</div>
+          <p class="sub">Added <b>live now</b>. The app doesn't write to your cluster — apply this to persist, or commit it to your Nuon app and <code>nuon sync</code>.</p>
+          <pre id="cm-yaml"></pre><pre id="sec-yaml"></pre>
+        </div>
+      </div>
+      <div class="m-f">
+        <button class="ghost" id="m-cancel">Close</button>
+        <button id="f-save" style="display:none;">Save integration</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let parsedOps = [];
+
+async function load() {
+  const res = await fetch('/api/integrations');
+  const items = await res.json();
+  const toolCount = items.reduce((n, i) => n + (i.tool_count || 0), 0);
+  $('meta').textContent = `${items.length} integration(s) · ${toolCount} tools enabled · all in-VPC`;
+  const list = $('list');
+  list.innerHTML = items.length ? '' : '<div class="empty">No integrations yet. Everything stays in-boundary.</div>';
+  for (const i of items) {
+    const el = document.createElement('div');
+    el.className = 'row';
+    el.innerHTML = `<span class="dot ${i.enabled ? '' : 'off'}"></span>
+      <div><div class="nm">${esc(i.name)}<span class="badge">${esc(i.type)}</span></div>
+      <div class="sub">${esc(i.base_url)} · ${i.tool_count} tools · ${esc(i.auth_type)}</div></div>
+      <span class="grow"></span>
+      ${i.source === 'session' ? '<span class="pill">not persisted</span>' : ''}
+      <div class="row-actions">
+        <span class="toggle" data-id="${esc(i.id)}" data-enabled="${i.enabled}">${i.enabled ? 'Disable' : 'Enable'}</span>
+        ${i.source === 'session' ? `<span class="toggle" data-del="${esc(i.id)}">Remove</span>` : ''}
+      </div>`;
+    list.appendChild(el);
+  }
+  list.querySelectorAll('[data-id]').forEach(s => s.onclick = async () => {
+    await fetch('/api/integrations/' + s.dataset.id, {method:'PATCH',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({enabled: s.dataset.enabled !== 'true'})});
+    load();
+  });
+  list.querySelectorAll('[data-del]').forEach(s => s.onclick = async () => {
+    await fetch('/api/integrations/' + s.dataset.del, {method:'DELETE'}); load();
+  });
+}
+
+function openModal() { $('overlay').classList.add('show'); }
+function closeModal() { $('overlay').classList.remove('show'); resetModal(); }
+function resetModal() {
+  ['f-name','f-spec-url','f-spec-text','f-base','f-header','f-secret'].forEach(i => $(i).value='');
+  ['sec-conn','sec-ops','persist','f-save'].forEach(i => $(i).style.display='none');
+  $('parse-status').textContent=''; $('test-status').textContent=''; parsedOps=[];
+}
+
+$('add').onclick = () => { resetModal(); openModal(); };
+$('m-close').onclick = closeModal; $('m-cancel').onclick = closeModal;
+$('f-auth').onchange = () => {
+  const t = $('f-auth').value;
+  $('auth-header-wrap').style.display = t === 'api_key_header' ? 'block' : 'none';
+  $('auth-secret-wrap').style.display = t === 'none' ? 'none' : 'block';
+};
+
+$('f-parse').onclick = async () => {
+  $('parse-status').textContent = 'parsing…';
+  const body = $('f-spec-text').value.trim()
+    ? {spec_text: $('f-spec-text').value} : {spec_url: $('f-spec-url').value};
+  const res = await fetch('/api/integrations/parse', {method:'POST',
+    headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  if (!res.ok) { $('parse-status').innerHTML = '<span class="err">'+(await res.json()).detail+'</span>'; return; }
+  const data = await res.json();
+  parsedOps = data.operations;
+  if (!$('f-name').value) $('f-name').value = data.title;
+  $('f-base').value = data.server || '';
+  $('parse-status').innerHTML = '<span class="ok">✓ '+parsedOps.length+' operations</span>';
+  const ops = $('ops'); ops.innerHTML='';
+  parsedOps.forEach((o,n) => {
+    ops.innerHTML += `<label class="op"><input type="checkbox" data-op="${n}" style="width:auto;"/>
+      <b>${esc(o.method).toUpperCase()}</b> ${esc(o.path)} <span class="sub">${esc(o.summary)}</span></label>`;
+  });
+  ops.onchange = () => { const c = ops.querySelectorAll(':checked').length;
+    $('ops-count').textContent = c + ' selected'; };
+  ['sec-conn','sec-ops','f-save'].forEach(i => $(i).style.display = i==='f-save'?'inline-block':'block');
+};
+
+$('f-test').onclick = async () => {
+  $('test-status').textContent = 'testing…';
+  const res = await fetch('/api/integrations/test', {method:'POST',
+    headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+      base_url: $('f-base').value,
+      auth: {type:$('f-auth').value, header:$('f-header').value},
+      secret_value: $('f-secret').value})});
+  const d = await res.json();
+  $('test-status').innerHTML = d.ok ? '<span class="ok">✓ '+d.detail+'</span>'
+    : '<span class="err">'+d.detail+' (you can still save)</span>';
+};
+
+$('f-save').onclick = async () => {
+  const chosen = [...$('ops').querySelectorAll(':checked')].map(c => parsedOps[c.dataset.op]);
+  const authType = $('f-auth').value;
+  const slug = $('f-name').value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+  const auth = {type: authType};
+  if (authType === 'api_key_header') auth.header = $('f-header').value;
+  if (authType !== 'none') auth.secret_ref = slug + '-secret';
+  const res = await fetch('/api/integrations', {method:'POST',
+    headers:{'Content-Type':'application/json'}, body: JSON.stringify({
+      name: $('f-name').value, base_url: $('f-base').value, auth,
+      secret_value: authType !== 'none' ? $('f-secret').value : null,
+      operations: chosen})});
+  const data = await res.json();
+  $('cm-yaml').textContent = data.manifest.configmap_yaml;
+  $('sec-yaml').textContent = data.manifest.secret_yaml || '# (no secret for this integration)';
+  $('persist').style.display = 'block'; $('f-save').style.display='none';
+  load();
+};
+
+load();
+</script>
+</body>
+</html>

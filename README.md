@@ -30,7 +30,7 @@ the model (~1–3 min on CPU), then it's resident.
 | Tier | Adds | Compute |
 |------|------|---------|
 | **0 — Hello world** (this kit) | chat UI + self-hosted tiny model | small CPU node, no GPU |
-| **1 — Wire your systems** | register OpenAPI/MCP tools (`src/app/integrations/`) | still CPU |
+| **1 — Wire your systems** | add integrations via the `/integrations` UI (OpenAPI working; MCP next) | still CPU |
 | **2 — Production model** | swap Ollama for vLLM + a larger open model | GPU node group |
 | **3 — Sovereign** | air-gap, RAG over your corpus, full audit | GPU + in-boundary stores |
 
@@ -89,8 +89,19 @@ else. (An optional Anthropic-compatible gateway is a Tier-2 add-on.)
 ## The integration scaffold
 
 `src/app/integrations/` is where you turn the chatbot into an agent over your own
-systems — via **OpenAPI specs** or **MCP servers**, both reachable inside the VPC.
-Empty in Tier 0 by design. See `src/app/integrations/README.md`.
+internal systems — without data or credentials leaving the customer's cloud boundary.
+Empty in Tier 0 by design.
+
+**Tier 1** adds a `/integrations` admin UI where an operator registers an internal
+HTTP service by pasting its OpenAPI/Swagger spec URL. The app fetches and parses the
+spec server-side, lets you pick which operations to expose, stores a server-side
+secret in a K8s Secret (secrets never reach the browser), and activates the
+integration live. It then emits ready-to-apply ConfigMap/Secret YAML to persist the
+config — the app never writes to the cluster itself. MCP server support is stubbed
+and coming next.
+
+See `src/app/integrations/README.md` for env vars, the dispatch heuristic, and
+security notes.
 
 ## Cost & sovereignty notes
 
