@@ -13,15 +13,11 @@ Teams shipping bespoke agents into **sovereignty-forced** clients (data/credenti
 leave the boundary) that **can't staff a platform team**. The hard part isn't building the
 agent — it's the security review and keeping it running across many clients.
 
-- **Sovereignty is a sign-off accelerant, not the product** — self-hosting answers the top
-  blockers (provenance, data residency, audit) *by construction*, shortening the review.
-- **Don't run it standalone** — alone it just relocates an ops burden into the client's
-  VPC. Its value is as the payload on **Nuon's in-account runner + runbooks**, which operate
-  the lifecycle (provision → deploy → drift-reconcile → push-updates) across **N client clouds**.
-- **Keeps reasoning in-boundary, not just compute** (unlike agent-in-VPC-over-a-managed-API,
-  e.g. Bedrock AgentCore) — the only shape that survives true air-gap.
+- **Sovereignty** — a sign-off accelerant, not the product; answers the top blockers (provenance · residency · audit) *by construction* → faster review.
+- **Deployment** — the payload on **Nuon's runner + runbooks** (provision → deploy → drift-reconcile → push-updates, across N client clouds); never standalone.
+- **Reasoning** — stays in-boundary, not just compute (vs agent-in-VPC-over-a-managed-API, e.g. Bedrock AgentCore); survives true air-gap.
 
-## What gets deployed (Tier 0)
+## What gets deployed
 
 Into the customer's AWS account, on EKS, **CPU-only — no GPU**:
 
