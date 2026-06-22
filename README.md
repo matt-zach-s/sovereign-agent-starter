@@ -25,8 +25,9 @@ certificate   (terraform)     ──► ACM cert (reused from nuonco/example-app
 alb           (helm)          ──► public HTTPS endpoint (reused)
 ```
 
-The model is a customer input (`model`, default `qwen2.5:1.5b`). First request pulls
-the model (~1–3 min on CPU), then it's resident.
+The model is a customer input (`model`, default `qwen2.5:1.5b`). The `ollama` component
+pulls it during deploy and only reports ready once it's resident (~1–3 min on CPU), so
+the install comes up warm — no cold first request.
 
 ## Try it locally first
 
@@ -51,7 +52,11 @@ nuon sync                       # syncs this app config
 
 ## Operational runbooks
 
-`runbooks/` holds five **Runbook** archetypes — named, multi-step procedures you run
+Creating an install already provisions the sandbox **and** deploys the whole app (the
+`ollama` component warms the model during deploy), so it comes up ready — there's no
+setup step to run. These runbooks are for **operating** an install afterward.
+
+`runbooks/` holds four **Runbook** archetypes — named, multi-step procedures you run
 on demand against an install, with a rendered README per runbook (see
 [`runbooks/README.md`](./runbooks/README.md)). They operate on this app's real
 components (`chatbot`, `ollama`, `application_load_balancer`) and actions
@@ -59,7 +64,6 @@ components (`chatbot`, `ollama`, `application_load_balancer`) and actions
 
 | Runbook | Scenario | Step types it shows |
 |---------|----------|---------------------|
-| `onboard-install` | **Setup** — onboard a new install | inline action → `component_deploy` → curl |
 | `full-health-check` | **Health check** — many signals at once | inline + `action_name` references |
 | `debug-bundle` | **Debug** — collect diagnostics | inline (read-only, non-failing) |
 | `reconcile-drift` | **Drift reconciliation** — re-apply desired state | `sandbox_reprovision` → `component_deploy` → curl |
