@@ -49,6 +49,19 @@ nuon sync                       # syncs this app config
 # then create an install against a customer AWS account from the dashboard/CLI
 ```
 
+Once an install is up, its endpoint is `https://<sub_domain>.<install_id>.<domain>`
+(with the defaults, `https://chat.<install_id>.nuon.run`). In the Nuon dashboard, this
+install's live link renders here:
+
+{{ if and .nuon.sandbox.populated .nuon.sandbox.outputs }}
+<nuon-group gap="8" align="center">
+  <nuon-badge theme="success" variant="code">LIVE</nuon-badge>
+  <nuon-badge theme="default" variant="code">https://{{ .nuon.inputs.inputs.sub_domain }}.{{ .nuon.sandbox.outputs.nuon_dns.public_domain.name }}/</nuon-badge>
+</nuon-group>
+{{ else }}
+_The link appears here once the install's sandbox is provisioned._
+{{ end }}
+
 ## Operational runbooks
 
 `runbooks/` holds five **Runbook** archetypes — named, multi-step procedures you run
