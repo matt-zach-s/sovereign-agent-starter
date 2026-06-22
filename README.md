@@ -10,12 +10,8 @@ around it: a self-hosted model, a one-line "swap your frontier API call" layer, 
 ### Who it's for
 
 Teams shipping bespoke agents into **sovereignty-forced** clients (data/credentials can't
-leave the boundary) that **can't staff a platform team**. The hard part isn't building the
-agent — it's the security review and keeping it running across many clients.
-
-- **Sovereignty** — a sign-off accelerant, not the product; answers the top blockers (provenance · residency · audit) *by construction* → faster review.
-- **Deployment** — the payload on **Nuon's runner + runbooks** (provision → deploy → drift-reconcile → push-updates, across N client clouds); never standalone.
-- **Reasoning** — stays in-boundary, not just compute (vs agent-in-VPC-over-a-managed-API, e.g. Bedrock AgentCore); survives true air-gap.
+leave the boundary) that **can't staff a platform team**. The hard part isn't building and
+deploying an agent, it's keeping N agents running across N customer environments.
 
 ## What gets deployed
 
