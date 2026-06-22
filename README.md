@@ -73,26 +73,26 @@ Run from the dashboard's **Runbooks** tab or `nuon runbooks --install-id <id>`.
 
 ## The swap layer
 
-`src/app/main.py` uses the **standard OpenAI client**, pointed at the self-hosted
-endpoint:
+`src/app/main.py` uses the **standard OpenAI client** — but pointed at the self-hosted
+endpoint, so requests go to your in-cluster model and never reach OpenAI:
 
 ```python
 client = OpenAI(base_url=os.environ["OPENAI_BASE_URL"],  # ...ollama:11434/v1
                 api_key="ollama")
 ```
 
-To migrate an existing OpenAI-based app, you change `OPENAI_BASE_URL` and nothing else.
-A self-hosted **LiteLLM** gateway (Anthropic-compatible surface, multi-model routing,
-audit logging) is a Tier-2 add-on — out of the Tier-0 first run, where there's nothing
-to route yet.
+"OpenAI-compatible" is just the de-facto wire protocol that self-hosted servers (Ollama,
+vLLM, LocalAI, …) all speak — the `openai` SDK is only an HTTP client for it, and
+`api_key` is a placeholder Ollama ignores. To migrate an existing OpenAI-based app, you
+change `OPENAI_BASE_URL` and nothing else.
 
 ## The integration scaffold
 
 `src/app/integrations/` is where you turn the chatbot into an agent over your own
 internal systems — without data or credentials leaving the customer's cloud boundary.
-Empty in Tier 0 by design.
+It ships empty.
 
-**Tier 1** adds a `/integrations` admin UI to register an **OpenAPI** service (paste its
+The `/integrations` admin UI registers an **OpenAPI** service (paste its
 spec URL) or an **MCP server** (paste its in-VPC URL). The app parses the spec / performs
 the MCP handshake server-side, you pick which operations or tools to expose, secrets go to
 a K8s Secret (never to the browser), and the tools go live on the next chat turn. It emits
@@ -105,7 +105,7 @@ security notes.
 
 ## Cost & sovereignty notes
 
-- Tier 0 is CPU-only; the cost floor is the EKS cluster + a small 2-node group, not
+- The default is CPU-only; the cost floor is the EKS cluster + a small 2-node group, not
   a GPU fleet. Reaching "hello world" never requires a GPU quota request. (Two nodes
   is the floor because the Nuon sandbox runs Kyverno in HA — that's the platform
   baseline, not the app; a single node can't schedule it alongside the model server.)
