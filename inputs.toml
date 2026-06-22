@@ -26,6 +26,6 @@ display_name = "Model"
 [[input]]
 name         = "model"
 description  = "Ollama model tag to self-host. Tiny CPU-friendly default. Step up (e.g. llama3.1:8b) on a larger instance type."
-default      = "llama3.2:3b"
+default      = "qwen2.5:1.5b"
 display_name = "Model"
 group        = "model"

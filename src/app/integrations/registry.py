@@ -2,8 +2,7 @@
 from typing import Optional
 
 from .config import read_secret
-from .models import sanitize_tool_name
-from .openapi_tools import tools_for
+from .providers import tool_refs, tools_for
 
 
 class Registry:
@@ -62,6 +61,6 @@ class Registry:
         for integ in self._integrations:
             if not integ.enabled:
                 continue
-            for op in integ.operations:
-                idx[sanitize_tool_name(op.operation_id)] = (integ, op)
+            for name, ref in tool_refs(integ):
+                idx[name] = (integ, ref)
         return idx

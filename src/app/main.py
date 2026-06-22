@@ -1,3 +1,4 @@
+import logging
 import os
 
 from fastapi import FastAPI
@@ -9,12 +10,16 @@ from integrations.config import load_integrations
 from integrations.registry import Registry
 from integrations.api import build_router
 from integrations.dispatch import dispatch
+from integrations.mcp_tools import dispatch_mcp
+
+log = logging.getLogger("sovereign-agent")
 
 # --- The swap layer ---------------------------------------------------------
 BASE_URL = os.environ.get("OPENAI_BASE_URL", "http://localhost:11434/v1")
 API_KEY = os.environ.get("OPENAI_API_KEY", "ollama")
-MODEL = os.environ.get("MODEL", "llama3.2:3b")
+MODEL = os.environ.get("MODEL", "qwen2.5:1.5b")
 ENABLE_ADMIN = os.environ.get("ENABLE_INTEGRATIONS_ADMIN", "true").lower() == "true"
+ADMIN_TOKEN = os.environ.get("INTEGRATIONS_ADMIN_TOKEN") or None
 MAX_TOOL_ITERS = 5
 
 client = OpenAI(base_url=BASE_URL, api_key=API_KEY)
@@ -30,7 +35,13 @@ registry = build_registry()
 
 app = FastAPI(title="Sovereign Agent Starter — chatbot")
 if ENABLE_ADMIN:
-    app.include_router(build_router(registry))
+    if not ADMIN_TOKEN:
+        log.warning(
+            "integrations admin is ENABLED with NO app-level auth "
+            "(set INTEGRATIONS_ADMIN_TOKEN). Anyone who can reach /integrations "
+            "could register tools that hold credentials to your internal systems. "
+            "Set a token or front it with ingress auth — see integrations/README.md.")
+    app.include_router(build_router(registry, admin_token=ADMIN_TOKEN))
 
 SYSTEM = ("You are a helpful assistant running fully self-hosted, inside the "
           "customer's own cloud. When tools are available, use them to answer "
@@ -44,12 +55,22 @@ class ChatRequest(BaseModel):
 @app.get("/health")
 def health():
     return {"status": "ok", "model": MODEL, "base_url": BASE_URL,
-            "tools": len(registry.tools())}
+            "tools": len(registry.tools()),
+            "integrations_admin": ("disabled" if not ENABLE_ADMIN
+                                   else "auth" if ADMIN_TOKEN else "open")}
 
 
 @app.get("/")
 def index():
     return FileResponse("static/index.html")
+
+
+def _dispatch_tool(integ, ref, args):
+    """Route a tool call to its provider: HTTP for OpenAPI, JSON-RPC for MCP."""
+    secret = registry.secret_for(integ)
+    if integ.type == "mcp":
+        return dispatch_mcp(integ, ref, args, secret)
+    return dispatch(integ, ref, args, secret)
 
 
 @app.post("/api/chat")
@@ -85,8 +106,8 @@ def chat(req: ChatRequest):
                 if pair is None:
                     result = f"tool error: unknown tool {name}"
                 else:
-                    integ, op = pair
-                    result = dispatch(integ, op, args, registry.secret_for(integ))
+                    integ, ref = pair
+                    result = _dispatch_tool(integ, ref, args)
                 trace.append({"tool": name, "args": args, "result_preview": result[:200]})
                 messages.append({"role": "tool", "tool_call_id": tc.id,
                                  "name": name, "content": result})

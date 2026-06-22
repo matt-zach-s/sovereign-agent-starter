@@ -70,3 +70,52 @@ def test_chat_without_tools_still_replies(monkeypatch, tmp_path):
     r = TestClient(main.app).post("/api/chat",
                                   json={"messages": [{"role": "user", "content": "hi"}]})
     assert r.json()["reply"] == "hello"
+
+
+@pytest.fixture
+def app_with_mcp_model(monkeypatch, tmp_path):
+    import importlib
+    cfg = tmp_path / "integrations.yaml"
+    cfg.write_text(
+        "integrations:\n"
+        "  - name: Tickets\n"
+        "    type: mcp\n"
+        "    base_url: http://mcp.internal/rpc\n"
+        "    auth: {type: none}\n"
+        "    mcp_tools:\n"
+        "      - {name: list_tickets, description: List}\n")
+    monkeypatch.setenv("INTEGRATIONS_CONFIG", str(cfg))
+    monkeypatch.setenv("INTEGRATIONS_SECRETS_DIR", "")
+
+    import main
+    importlib.reload(main)
+
+    calls = {"n": 0}
+
+    def fake_create(**kwargs):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            tc = types.SimpleNamespace(
+                id="c1", function=types.SimpleNamespace(name="list_tickets", arguments="{}"))
+            msg = types.SimpleNamespace(content=None, tool_calls=[tc])
+        else:
+            msg = types.SimpleNamespace(content="2 open tickets.", tool_calls=None)
+        return types.SimpleNamespace(choices=[types.SimpleNamespace(message=msg)])
+
+    monkeypatch.setattr(main.client.chat.completions, "create", fake_create)
+
+    def fake_dispatch_mcp(integration, tool, args, secret, client=None):
+        assert integration.type == "mcp" and tool.name == "list_tickets"
+        return "open: 2"
+    monkeypatch.setattr(main, "dispatch_mcp", fake_dispatch_mcp)
+
+    return TestClient(main.app)
+
+
+def test_chat_runs_mcp_tool_loop(app_with_mcp_model):
+    r = app_with_mcp_model.post("/api/chat", json={
+        "messages": [{"role": "user", "content": "how many tickets?"}]})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["reply"] == "2 open tickets."
+    assert body["trace"][0]["tool"] == "list_tickets"

@@ -22,7 +22,7 @@ certificate   (terraform)     ──► ACM cert (reused from nuonco/example-app
 alb           (helm)          ──► public HTTPS endpoint (reused)
 ```
 
-The model is a customer input (`model`, default `llama3.2:3b`). First request pulls
+The model is a customer input (`model`, default `qwen2.5:1.5b`). First request pulls
 the model (~1–3 min on CPU), then it's resident.
 
 ## Complexity tiers

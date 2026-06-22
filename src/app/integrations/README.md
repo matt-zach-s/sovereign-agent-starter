@@ -6,10 +6,13 @@ boundary.
 
 ## The `/integrations` admin UI
 
-An operator-facing page lives at `/integrations`. It is off by default and gated by
-the `ENABLE_INTEGRATIONS_ADMIN` env var (set to `"true"` to enable it). Because Tier 0
-ships with **no app-level authentication**, you must front `/integrations` with
-ingress auth and network-restrict it in production before exposing it.
+An operator-facing page lives at `/integrations`, gated by the
+`ENABLE_INTEGRATIONS_ADMIN` env var (defaults to `"true"`). **App-level auth is
+available:** set `INTEGRATIONS_ADMIN_TOKEN` and every `/api/integrations*` call must
+carry it (`X-Admin-Token: <token>` or `Authorization: Bearer <token>`) — the page
+shell still loads and the UI prompts for the token. If no token is set the admin API
+is open and the app logs a loud startup warning; in that case you must front
+`/integrations` with ingress auth and network-restrict it before exposing it.
 
 ### OpenAPI flow (working end-to-end)
 
@@ -26,10 +29,22 @@ ingress auth and network-restrict it in production before exposing it.
    into your own GitOps repo or apply them directly. **The app never writes to the
    cluster** — it only emits YAML for you to apply.
 
-### MCP (coming next)
+### MCP flow (working)
 
-MCP server support is stubbed out and not yet functional. It will follow the same
-UI flow once implemented.
+1. **Choose "MCP server → tools"** in the Add-integration dialog and paste an in-VPC
+   MCP server URL (Streamable HTTP / JSON-RPC).
+2. **Connect & discover.** The app performs the MCP handshake server-side
+   (`initialize` → `notifications/initialized` → `tools/list`) and lists the
+   server's tools.
+3. **Select tools, set auth, activate.** Selected tools become model tools on the
+   next chat turn; calls are dispatched to the server via `tools/call`.
+4. **Persist** the same way (ConfigMap/Secret YAML). MCP integrations can also be
+   supplied at boot via the `MCP_SERVER_URLS` env var or the `integrations.yaml`
+   ConfigMap (`type: mcp`).
+
+The client speaks the core of the protocol over HTTP and is dependency-free (reuses
+`httpx`); stdio transport and long-lived server→client streaming are documented
+fork-it extensions (see `mcp_tools.py`).
 
 ## Environment variables
 
@@ -38,6 +53,8 @@ UI flow once implemented.
 | `INTEGRATIONS_CONFIG` | JSON blob describing registered integrations (loaded from the ConfigMap) |
 | `INTEGRATIONS_SECRETS_DIR` | Directory where K8s Secret volume mounts land (one file per secret key) |
 | `ENABLE_INTEGRATIONS_ADMIN` | Set to `"true"` to enable the `/integrations` admin page |
+| `INTEGRATIONS_ADMIN_TOKEN` | If set, require this token on every `/api/integrations*` call |
+| `MCP_SERVER_URLS` | Comma-separated in-VPC MCP server URLs to expose as tools at boot |
 
 ## Dispatch heuristic
 
@@ -53,9 +70,11 @@ data, file uploads) will need a custom dispatch layer.
 
 ## Security notes
 
-- **Tier 0 has no app-level authentication.** Front `/integrations` with ingress auth
-  (e.g. an OAuth2-proxy sidecar or ALB authentication rules) and restrict its network
-  exposure in production.
+- **App-level auth is available — turn it on.** Set `INTEGRATIONS_ADMIN_TOKEN`
+  (Helm value `adminToken`) so the admin API rejects unauthenticated calls. Defense in
+  depth: still front `/integrations` with ingress auth (an OAuth2-proxy sidecar or ALB
+  auth rules) and restrict its network exposure. An unauthenticated tool-registration
+  endpoint holds credentials to your internal systems — never expose it open.
 - Spec URLs and base URLs are fetched **server-side**; the browser never makes
   out-of-cluster requests on behalf of the operator.
 - Secrets are stored in a K8s Secret and mounted as files. They are **never returned
