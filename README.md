@@ -1,36 +1,25 @@
 # Sovereign Agent Starter
 
 A **self-hosted chatbot + a tiny open-weight LLM**, deployed into a customer's own
-cloud account with [Nuon](https://nuon.co) — the **day-0 starting line** for an
-*operating* agent that does real work inside a customer's boundary: the model, the
-app, and (when you extend it) the integrations all run in-account, with **no frontier
-API calls leaving the cluster**.
+cloud account with [Nuon](https://nuon.co) — a **day-0 starting line** for an *operating*
+agent that runs entirely inside the customer's boundary, with **no frontier API calls
+leaving the cluster**. The chatbot is deliberately simple; the value is the plumbing
+around it: a self-hosted model, a one-line "swap your frontier API call" layer, and an
+**integration scaffold (OpenAPI + MCP)** for wiring the agent into internal systems.
 
-The example app is deliberately a simple chatbot. The value is everything around it:
-a self-hosted model, a one-line "swap your frontier API call" layer, and an
-**integration scaffold (OpenAPI + MCP)** for wiring the agent into your own internal
-systems.
+### Who it's for
 
-### Who this is for, and why it's shaped this way
+Teams shipping bespoke agents into **sovereignty-forced** clients (data/credentials can't
+leave the boundary) that **can't staff a platform team**. The hard part isn't building the
+agent — it's the security review and keeping it running across many clients.
 
-Built for teams — boutique AI-consulting firms and regulated-enterprise builders —
-shipping bespoke agents into clients that are **sovereignty-forced** (data and
-credentials can't leave the boundary) yet **can't staff a platform team** to run a
-self-hosted stack. For them the hard part isn't building the agent; it's getting it
-**through the security review and keeping it running across many clients**.
-
-- **Sovereignty is a sign-off accelerant, not the product.** Self-hosting the model
-  answers the three things that most often block an AI deployment — model provenance,
-  data residency, and audit trail — *by construction*, which is what shortens the
-  security review.
-- **Don't run this kit standalone.** On its own it just relocates a Kubernetes +
-  model-babysitting job into the client's VPC. Paired with **Nuon's in-account runner
-  and the operational runbooks**, the lifecycle (provision → deploy → drift-reconcile →
-  push-updates) is operated *for* the client — and reproducibly across **N different
-  client clouds**, which is the actual prize.
-- **vs. putting the agent in a client VPC over a managed model API** (e.g. Bedrock
-  AgentCore): this keeps the **reasoning in-boundary**, not just the compute — the only
-  shape that also survives true air-gap.
+- **Sovereignty is a sign-off accelerant, not the product** — self-hosting answers the top
+  blockers (provenance, data residency, audit) *by construction*, shortening the review.
+- **Don't run it standalone** — alone it just relocates an ops burden into the client's
+  VPC. Its value is as the payload on **Nuon's in-account runner + runbooks**, which operate
+  the lifecycle (provision → deploy → drift-reconcile → push-updates) across **N client clouds**.
+- **Keeps reasoning in-boundary, not just compute** (unlike agent-in-VPC-over-a-managed-API,
+  e.g. Bedrock AgentCore) — the only shape that survives true air-gap.
 
 ## What gets deployed (Tier 0)
 
@@ -105,10 +94,9 @@ client = OpenAI(base_url=os.environ["OPENAI_BASE_URL"],  # ...ollama:11434/v1
                 api_key="ollama")
 ```
 
-To migrate an existing OpenAI-based app, you change `OPENAI_BASE_URL` and nothing
-else. For multi-model routing, an Anthropic-compatible surface, virtual keys, or
-request-audit logging, a self-hosted **LiteLLM** gateway is a Tier-2 add-on —
-intentionally *not* in the Tier-0 first run, where there's a single model and nothing
+To migrate an existing OpenAI-based app, you change `OPENAI_BASE_URL` and nothing else.
+A self-hosted **LiteLLM** gateway (Anthropic-compatible surface, multi-model routing,
+audit logging) is a Tier-2 add-on — out of the Tier-0 first run, where there's nothing
 to route yet.
 
 ## The integration scaffold
@@ -117,15 +105,13 @@ to route yet.
 internal systems — without data or credentials leaving the customer's cloud boundary.
 Empty in Tier 0 by design.
 
-**Tier 1** adds a `/integrations` admin UI where an operator registers either an
-**OpenAPI** service (paste its spec URL) or an **MCP server** (paste its in-VPC URL).
-The app parses the spec / performs the MCP handshake server-side, lets you pick which
-operations or tools to expose, stores any secret in a K8s Secret (secrets never reach
-the browser), and activates the integration live — its tools become callable by the
-agent on the next turn. It then emits ready-to-apply ConfigMap/Secret YAML to persist
-the config; the app never writes to the cluster itself. The admin API supports
-**app-level auth** (`INTEGRATIONS_ADMIN_TOKEN`) — an unauthenticated tool-registration
-endpoint holds credentials to your internal systems, so set a token before exposing it.
+**Tier 1** adds a `/integrations` admin UI to register an **OpenAPI** service (paste its
+spec URL) or an **MCP server** (paste its in-VPC URL). The app parses the spec / performs
+the MCP handshake server-side, you pick which operations or tools to expose, secrets go to
+a K8s Secret (never to the browser), and the tools go live on the next chat turn. It emits
+ready-to-apply ConfigMap/Secret YAML to persist — the app never writes to the cluster. Set
+`INTEGRATIONS_ADMIN_TOKEN` to require app-level auth before exposing it (an unauthenticated
+tool-registration endpoint holds keys to your internal systems).
 
 See `src/app/integrations/README.md` for env vars, the dispatch heuristic, and
 security notes.
