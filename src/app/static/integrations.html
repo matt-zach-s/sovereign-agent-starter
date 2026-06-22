@@ -62,16 +62,29 @@
       <div class="m-b">
         <div class="sec">
           <div class="sec-t">1 · Source</div>
+          <label>Kind</label>
+          <select id="f-type">
+            <option value="openapi">OpenAPI spec → tools</option>
+            <option value="mcp">MCP server → tools</option>
+          </select>
           <label>Name</label><input id="f-name" placeholder="Inventory API" />
-          <label>OpenAPI spec URL (in-VPC)</label>
-          <input id="f-spec-url" placeholder="http://inventory.svc.internal/v1/openapi.json" />
-          <label>…or paste spec (JSON/YAML)</label><textarea id="f-spec-text"></textarea>
-          <div style="margin-top:8px;"><button class="ghost" id="f-parse">Fetch &amp; parse</button>
+          <!-- OpenAPI source -->
+          <div id="src-openapi">
+            <label>OpenAPI spec URL (in-VPC)</label>
+            <input id="f-spec-url" placeholder="http://inventory.svc.internal/v1/openapi.json" />
+            <label>…or paste spec (JSON/YAML)</label><textarea id="f-spec-text"></textarea>
+          </div>
+          <!-- MCP source -->
+          <div id="src-mcp" style="display:none;">
+            <label>MCP server URL (in-VPC, Streamable HTTP)</label>
+            <input id="f-mcp-url" placeholder="http://tickets-mcp.svc.internal/mcp" />
+          </div>
+          <div style="margin-top:8px;"><button class="ghost" id="f-parse">Discover tools</button>
             <span id="parse-status"></span></div>
         </div>
         <div class="sec" id="sec-conn" style="display:none;">
           <div class="sec-t">2 · Connection &amp; auth</div>
-          <label>Base URL</label><input id="f-base" />
+          <label id="lbl-base">Base URL</label><input id="f-base" />
           <label>Auth type</label>
           <select id="f-auth"><option value="none">None</option>
             <option value="bearer">Bearer token</option>
@@ -84,8 +97,8 @@
             <span id="test-status"></span></div>
         </div>
         <div class="sec" id="sec-ops" style="display:none;">
-          <div class="sec-t">3 · Operations → tools <span id="ops-count" style="float:right;text-transform:none;"></span></div>
-          <div class="sub" style="margin-bottom:6px;">Pick which operations the agent may call. Small models do best with ≤ ~8.</div>
+          <div class="sec-t">3 · Tools <span id="ops-count" style="float:right;text-transform:none;"></span></div>
+          <div class="sub" style="margin-bottom:6px;">Pick which tools the agent may call. Small models do best with ≤ ~8.</div>
           <div class="ops" id="ops"></div>
         </div>
         <div id="persist" style="display:none;">
@@ -104,10 +117,29 @@
 <script>
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let parsedOps = [];
+let parsed = [];          // OpenAPI operations OR MCP tools (current source kind)
+let kind = 'openapi';
+
+// --- token-aware fetch: the API may require an admin token (X-Admin-Token) ---
+const token = () => sessionStorage.getItem('admin-token') || '';
+async function api(path, opts = {}) {
+  opts.headers = Object.assign({}, opts.headers, token() ? {'X-Admin-Token': token()} : {});
+  let res = await fetch(path, opts);
+  if (res.status === 401) {
+    const t = prompt('This integrations API requires an admin token:');
+    if (t) {
+      sessionStorage.setItem('admin-token', t);
+      opts.headers['X-Admin-Token'] = t;
+      res = await fetch(path, opts);
+    }
+  }
+  return res;
+}
+const jheaders = {'Content-Type':'application/json'};
 
 async function load() {
-  const res = await fetch('/api/integrations');
+  const res = await api('/api/integrations');
+  if (!res.ok) { $('meta').textContent = 'admin API locked (token required)'; return; }
   const items = await res.json();
   const toolCount = items.reduce((n, i) => n + (i.tool_count || 0), 0);
   $('meta').textContent = `${items.length} integration(s) · ${toolCount} tools enabled · all in-VPC`;
@@ -128,59 +160,83 @@ async function load() {
     list.appendChild(el);
   }
   list.querySelectorAll('[data-id]').forEach(s => s.onclick = async () => {
-    await fetch('/api/integrations/' + s.dataset.id, {method:'PATCH',
-      headers:{'Content-Type':'application/json'},
+    await api('/api/integrations/' + s.dataset.id, {method:'PATCH', headers: jheaders,
       body: JSON.stringify({enabled: s.dataset.enabled !== 'true'})});
     load();
   });
   list.querySelectorAll('[data-del]').forEach(s => s.onclick = async () => {
-    await fetch('/api/integrations/' + s.dataset.del, {method:'DELETE'}); load();
+    await api('/api/integrations/' + s.dataset.del, {method:'DELETE'}); load();
   });
 }
 
 function openModal() { $('overlay').classList.add('show'); }
 function closeModal() { $('overlay').classList.remove('show'); resetModal(); }
 function resetModal() {
-  ['f-name','f-spec-url','f-spec-text','f-base','f-header','f-secret'].forEach(i => $(i).value='');
+  ['f-name','f-spec-url','f-spec-text','f-mcp-url','f-base','f-header','f-secret'].forEach(i => $(i).value='');
   ['sec-conn','sec-ops','persist','f-save'].forEach(i => $(i).style.display='none');
-  $('parse-status').textContent=''; $('test-status').textContent=''; parsedOps=[];
+  $('parse-status').textContent=''; $('test-status').textContent=''; parsed=[];
+  $('f-type').value = 'openapi'; applyKind();
+}
+function applyKind() {
+  kind = $('f-type').value;
+  $('src-openapi').style.display = kind === 'openapi' ? 'block' : 'none';
+  $('src-mcp').style.display = kind === 'mcp' ? 'block' : 'none';
+  $('lbl-base').textContent = kind === 'mcp' ? 'MCP server URL' : 'Base URL';
+  $('f-parse').textContent = kind === 'mcp' ? 'Connect & discover' : 'Fetch & parse';
 }
 
 $('add').onclick = () => { resetModal(); openModal(); };
 $('m-close').onclick = closeModal; $('m-cancel').onclick = closeModal;
+$('f-type').onchange = applyKind;
 $('f-auth').onchange = () => {
   const t = $('f-auth').value;
   $('auth-header-wrap').style.display = t === 'api_key_header' ? 'block' : 'none';
   $('auth-secret-wrap').style.display = t === 'none' ? 'none' : 'block';
 };
 
-$('f-parse').onclick = async () => {
-  $('parse-status').textContent = 'parsing…';
-  const body = $('f-spec-text').value.trim()
-    ? {spec_text: $('f-spec-text').value} : {spec_url: $('f-spec-url').value};
-  const res = await fetch('/api/integrations/parse', {method:'POST',
-    headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
-  if (!res.ok) { $('parse-status').innerHTML = '<span class="err">'+(await res.json()).detail+'</span>'; return; }
-  const data = await res.json();
-  parsedOps = data.operations;
-  if (!$('f-name').value) $('f-name').value = data.title;
-  $('f-base').value = data.server || '';
-  $('parse-status').innerHTML = '<span class="ok">✓ '+parsedOps.length+' operations</span>';
+function renderItems() {
   const ops = $('ops'); ops.innerHTML='';
-  parsedOps.forEach((o,n) => {
+  parsed.forEach((o, n) => {
+    const lhs = kind === 'mcp'
+      ? `<b>${esc(o.name)}</b>`
+      : `<b>${esc(o.method).toUpperCase()}</b> ${esc(o.path)}`;
+    const desc = kind === 'mcp' ? o.description : o.summary;
     ops.innerHTML += `<label class="op"><input type="checkbox" data-op="${n}" style="width:auto;"/>
-      <b>${esc(o.method).toUpperCase()}</b> ${esc(o.path)} <span class="sub">${esc(o.summary)}</span></label>`;
+      ${lhs} <span class="sub">${esc(desc || '')}</span></label>`;
   });
-  ops.onchange = () => { const c = ops.querySelectorAll(':checked').length;
-    $('ops-count').textContent = c + ' selected'; };
+  ops.onchange = () => { $('ops-count').textContent = ops.querySelectorAll(':checked').length + ' selected'; };
   ['sec-conn','sec-ops','f-save'].forEach(i => $(i).style.display = i==='f-save'?'inline-block':'block');
+}
+
+$('f-parse').onclick = async () => {
+  $('parse-status').textContent = kind === 'mcp' ? 'connecting…' : 'parsing…';
+  let res, data;
+  if (kind === 'mcp') {
+    res = await api('/api/integrations/mcp/discover', {method:'POST', headers: jheaders,
+      body: JSON.stringify({server_url: $('f-mcp-url').value})});
+    if (!res.ok) { $('parse-status').innerHTML = '<span class="err">'+((await res.json()).detail||'error')+'</span>'; return; }
+    data = await res.json();
+    parsed = data.tools;
+    $('f-base').value = data.server_url || $('f-mcp-url').value;
+    $('parse-status').innerHTML = '<span class="ok">✓ '+parsed.length+' tools</span>';
+  } else {
+    const body = $('f-spec-text').value.trim()
+      ? {spec_text: $('f-spec-text').value} : {spec_url: $('f-spec-url').value};
+    res = await api('/api/integrations/parse', {method:'POST', headers: jheaders, body: JSON.stringify(body)});
+    if (!res.ok) { $('parse-status').innerHTML = '<span class="err">'+((await res.json()).detail||'error')+'</span>'; return; }
+    data = await res.json();
+    parsed = data.operations;
+    if (!$('f-name').value) $('f-name').value = data.title;
+    $('f-base').value = data.server || '';
+    $('parse-status').innerHTML = '<span class="ok">✓ '+parsed.length+' operations</span>';
+  }
+  renderItems();
 };
 
 $('f-test').onclick = async () => {
   $('test-status').textContent = 'testing…';
-  const res = await fetch('/api/integrations/test', {method:'POST',
-    headers:{'Content-Type':'application/json'}, body: JSON.stringify({
-      base_url: $('f-base').value,
+  const res = await api('/api/integrations/test', {method:'POST', headers: jheaders,
+    body: JSON.stringify({base_url: $('f-base').value,
       auth: {type:$('f-auth').value, header:$('f-header').value},
       secret_value: $('f-secret').value})});
   const d = await res.json();
@@ -189,17 +245,18 @@ $('f-test').onclick = async () => {
 };
 
 $('f-save').onclick = async () => {
-  const chosen = [...$('ops').querySelectorAll(':checked')].map(c => parsedOps[c.dataset.op]);
+  const chosen = [...$('ops').querySelectorAll(':checked')].map(c => parsed[c.dataset.op]);
   const authType = $('f-auth').value;
   const slug = $('f-name').value.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
   const auth = {type: authType};
   if (authType === 'api_key_header') auth.header = $('f-header').value;
   if (authType !== 'none') auth.secret_ref = slug + '-secret';
-  const res = await fetch('/api/integrations', {method:'POST',
-    headers:{'Content-Type':'application/json'}, body: JSON.stringify({
-      name: $('f-name').value, base_url: $('f-base').value, auth,
-      secret_value: authType !== 'none' ? $('f-secret').value : null,
-      operations: chosen})});
+  const payload = {
+    name: $('f-name').value, type: kind, base_url: $('f-base').value, auth,
+    secret_value: authType !== 'none' ? $('f-secret').value : null,
+  };
+  if (kind === 'mcp') payload.mcp_tools = chosen; else payload.operations = chosen;
+  const res = await api('/api/integrations', {method:'POST', headers: jheaders, body: JSON.stringify(payload)});
   const data = await res.json();
   $('cm-yaml').textContent = data.manifest.configmap_yaml;
   $('sec-yaml').textContent = data.manifest.secret_yaml || '# (no secret for this integration)';
@@ -207,6 +264,7 @@ $('f-save').onclick = async () => {
   load();
 };
 
+applyKind();
 load();
 </script>
 </body>

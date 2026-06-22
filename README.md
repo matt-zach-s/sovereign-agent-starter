@@ -1,16 +1,19 @@
 # Sovereign Agent Starter
 
-A **self-hosted chatbot + a tiny open-weight LLM**, deployable into a customer's own
-cloud account with [Nuon](https://nuon.co). It's a **starting line** for building
-sovereign agentic tools: the model, the app, and (when you extend it) the
-integrations all run inside the customer's boundary — no frontier API calls leave
-the cluster.
+A **self-hosted chatbot + a tiny open-weight LLM**, deployed into a customer's own
+cloud account with [Nuon](https://nuon.co) — a **day-0 starting line** for an *operating*
+agent that runs entirely inside the customer's boundary, with **no frontier API calls
+leaving the cluster**. The chatbot is deliberately simple; the value is the plumbing
+around it: a self-hosted model, a one-line "swap your frontier API call" layer, and an
+**integration scaffold (OpenAPI + MCP)** for wiring the agent into internal systems.
 
-The example app is deliberately a simple chatbot. The value is everything around it:
-a self-hosted model, a one-line "swap your frontier API call" layer, and an
-integration scaffold for wiring in your own internal systems.
+### Who it's for
 
-## What gets deployed (Tier 0)
+Teams shipping bespoke agents into **sovereignty-forced** clients (data/credentials can't
+leave the boundary) that **can't staff a platform team**. The hard part isn't building and
+deploying an agent, it's keeping N agents running across N customer environments.
+
+## What gets deployed
 
 Into the customer's AWS account, on EKS, **CPU-only — no GPU**:
 
@@ -22,17 +25,8 @@ certificate   (terraform)     ──► ACM cert (reused from nuonco/example-app
 alb           (helm)          ──► public HTTPS endpoint (reused)
 ```
 
-The model is a customer input (`model`, default `llama3.2:3b`). First request pulls
+The model is a customer input (`model`, default `qwen2.5:1.5b`). First request pulls
 the model (~1–3 min on CPU), then it's resident.
-
-## Complexity tiers
-
-| Tier | Adds | Compute |
-|------|------|---------|
-| **0 — Hello world** (this kit) | chat UI + self-hosted tiny model | small CPU node, no GPU |
-| **1 — Wire your systems** | add integrations via the `/integrations` UI (OpenAPI working; MCP next) | still CPU |
-| **2 — Production model** | swap Ollama for vLLM + a larger open model | GPU node group |
-| **3 — Sovereign** | air-gap, RAG over your corpus, full audit | GPU + in-boundary stores |
 
 ## Try it locally first
 
@@ -75,37 +69,39 @@ Run from the dashboard's **Runbooks** tab or `nuon runbooks --install-id <id>`.
 
 ## The swap layer
 
-`src/app/main.py` uses the **standard OpenAI client**, pointed at the self-hosted
-endpoint:
+`src/app/main.py` uses the **standard OpenAI client** — but pointed at the self-hosted
+endpoint, so requests go to your in-cluster model and never reach OpenAI:
 
 ```python
 client = OpenAI(base_url=os.environ["OPENAI_BASE_URL"],  # ...ollama:11434/v1
                 api_key="ollama")
 ```
 
-To migrate an existing OpenAI-based app, you change `OPENAI_BASE_URL` and nothing
-else. (An optional Anthropic-compatible gateway is a Tier-2 add-on.)
+"OpenAI-compatible" is just the de-facto wire protocol that self-hosted servers (Ollama,
+vLLM, LocalAI, …) all speak — the `openai` SDK is only an HTTP client for it, and
+`api_key` is a placeholder Ollama ignores. To migrate an existing OpenAI-based app, you
+change `OPENAI_BASE_URL` and nothing else.
 
 ## The integration scaffold
 
 `src/app/integrations/` is where you turn the chatbot into an agent over your own
 internal systems — without data or credentials leaving the customer's cloud boundary.
-Empty in Tier 0 by design.
+It ships empty.
 
-**Tier 1** adds a `/integrations` admin UI where an operator registers an internal
-HTTP service by pasting its OpenAPI/Swagger spec URL. The app fetches and parses the
-spec server-side, lets you pick which operations to expose, stores a server-side
-secret in a K8s Secret (secrets never reach the browser), and activates the
-integration live. It then emits ready-to-apply ConfigMap/Secret YAML to persist the
-config — the app never writes to the cluster itself. MCP server support is stubbed
-and coming next.
+The `/integrations` admin UI registers an **OpenAPI** service (paste its
+spec URL) or an **MCP server** (paste its in-VPC URL). The app parses the spec / performs
+the MCP handshake server-side, you pick which operations or tools to expose, secrets go to
+a K8s Secret (never to the browser), and the tools go live on the next chat turn. It emits
+ready-to-apply ConfigMap/Secret YAML to persist — the app never writes to the cluster. Set
+`INTEGRATIONS_ADMIN_TOKEN` to require app-level auth before exposing it (an unauthenticated
+tool-registration endpoint holds keys to your internal systems).
 
 See `src/app/integrations/README.md` for env vars, the dispatch heuristic, and
 security notes.
 
 ## Cost & sovereignty notes
 
-- Tier 0 is CPU-only; the cost floor is the EKS cluster + a small 2-node group, not
+- The default is CPU-only; the cost floor is the EKS cluster + a small 2-node group, not
   a GPU fleet. Reaching "hello world" never requires a GPU quota request. (Two nodes
   is the floor because the Nuon sandbox runs Kyverno in HA — that's the platform
   baseline, not the app; a single node can't schedule it alongside the model server.)

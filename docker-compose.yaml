@@ -7,10 +7,10 @@ services:
         /bin/ollama serve &
         pid=$$!
         until ollama list >/dev/null 2>&1; do sleep 2; done
-        ollama pull "$${MODEL:-llama3.2:3b}"
+        ollama pull "$${MODEL:-qwen2.5:1.5b}"
         wait $$pid
     environment:
-      - MODEL=${MODEL:-llama3.2:3b}
+      - MODEL=${MODEL:-qwen2.5:1.5b}
     ports:
       - "11434:11434"
     volumes:
@@ -21,7 +21,7 @@ services:
     environment:
       - OPENAI_BASE_URL=http://ollama:11434/v1
       - OPENAI_API_KEY=ollama
-      - MODEL=${MODEL:-llama3.2:3b}
+      - MODEL=${MODEL:-qwen2.5:1.5b}
       - PORT=8080
     ports:
       - "8080:8080"

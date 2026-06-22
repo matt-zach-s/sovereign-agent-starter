@@ -5,7 +5,7 @@ image:
   repository: "ollama/ollama"
   tag: "latest"
 
-model: "llama3.2:3b"
+model: "qwen2.5:1.5b"
 
 service:
   port: 11434

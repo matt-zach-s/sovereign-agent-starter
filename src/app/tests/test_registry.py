@@ -45,3 +45,13 @@ def test_tool_index_maps_name_to_op():
     idx = reg.tool_index()
     integ, op = idx["getItems"]
     assert op.path == "/items" and integ.id == "inv"
+
+
+def test_mcp_integration_tools_and_index():
+    from integrations.models import McpTool
+    integ = Integration(name="Tix", type="mcp", base_url="http://mcp",
+                        mcp_tools=[McpTool(name="close_ticket", description="Close")])
+    reg = Registry([integ], None)
+    assert [t["function"]["name"] for t in reg.tools()] == ["close_ticket"]
+    found, ref = reg.tool_index()["close_ticket"]
+    assert found.id == "tix" and ref.name == "close_ticket"

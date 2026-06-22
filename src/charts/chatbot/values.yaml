@@ -6,7 +6,7 @@ image:
   tag: "latest"
 
 openaiBaseUrl: "http://ollama.agent.svc.cluster.local:11434/v1"
-model: "llama3.2:3b"
+model: "qwen2.5:1.5b"
 
 service:
   port: 80
@@ -15,6 +15,16 @@ deployment:
   containerPort: 8080
 
 enableIntegrationsAdmin: true
+
+# App-level auth for the /integrations admin API. Empty = open (local/dev) plus a
+# loud startup warning; set a token to require it on every /api/integrations* call
+# (sent as `X-Admin-Token` or `Authorization: Bearer`). Recommended for any
+# internet-reachable deploy.
+adminToken: ""
+
+# Comma-separated in-VPC MCP server URLs (Streamable HTTP) to expose as agent
+# tools at boot. The /integrations admin UI is the richer, per-server path.
+mcpServerUrls: ""
 
 # Integration defs rendered into the chatbot-integrations ConfigMap.
 # Empty in Tier 0. The /integrations UI generates this block for you.

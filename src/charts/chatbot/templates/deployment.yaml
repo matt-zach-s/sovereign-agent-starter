@@ -34,6 +34,16 @@ spec:
           value: "/etc/chatbot/secrets"
         - name: ENABLE_INTEGRATIONS_ADMIN
           value: "{{ .Values.enableIntegrationsAdmin | default true }}"
+        - name: MCP_SERVER_URLS
+          value: "{{ .Values.mcpServerUrls | default "" }}"
+        # App-level auth for the /integrations admin API. Optional: if the
+        # secret is absent the app runs the admin UI open + logs a loud warning.
+        - name: INTEGRATIONS_ADMIN_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: chatbot-admin
+              key: admin-token
+              optional: true
         ports:
         - containerPort: {{ .Values.deployment.containerPort }}
         resources:

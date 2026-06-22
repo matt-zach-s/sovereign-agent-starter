@@ -18,6 +18,14 @@ deployment:
 
 enableIntegrationsAdmin: true
 
+# App-level auth for the /integrations admin API. Empty = open + a loud warning;
+# set a token (or wire a Nuon secret/input here) to require it on every admin call.
+# Strongly recommended once the endpoint is reachable.
+adminToken: ""
+
+# Comma-separated in-VPC MCP server URLs to expose as agent tools at boot.
+mcpServerUrls: ""
+
 # Integration defs rendered into the chatbot-integrations ConfigMap.
 # Empty in Tier 0. The /integrations UI generates this block for you.
 integrations:
