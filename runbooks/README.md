@@ -5,13 +5,15 @@ from the dashboard's **Runbooks** tab or `nuon runbooks --install-id <id>`. Each
 runbook is a `<name>.toml` (the steps) plus a `<name>.md` (a rendered README that
 templates in live install data).
 
+Onboarding is automatic: creating an install deploys the app and warms the model, so
+it comes up ready. These runbooks are for **operating** an install afterward.
+
 Every runbook here operates on this app's real components (`chatbot`, `ollama`,
 `certificate`, `application_load_balancer`) and actions (`deployment_status`,
 `alb_healthcheck`, `break_glass_remediation`).
 
 | Runbook | Scenario | Steps |
 |---------|----------|-------|
-| [`onboard-install`](./onboard-install.md) | **Setup** — onboard a new install | warm the model → `component_deploy` chatbot → smoke-test |
 | [`full-health-check`](./full-health-check.md) | **Health check** — many signals at once | nodes · `deployment_status` · model server · `alb_healthcheck` · endpoint |
 | [`debug-bundle`](./debug-bundle.md) | **Debug** — something's gone wrong | describe + events → logs (chatbot + ollama) → endpoint probe (read-only) |
 | [`reconcile-drift`](./reconcile-drift.md) | **Drift reconciliation** — re-apply desired state | `sandbox_reprovision` → `component_deploy` ollama + chatbot → verify |
